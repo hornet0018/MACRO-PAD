@@ -29,6 +29,7 @@ uint8_t sw4 = 0;
 uint8_t sw5 = 0;
 uint8_t sw6 = 0;
 uint8_t sw7 = 0;
+uint8_t sw8 = 0;
 uint8_t sw_state = 0;
 uint8_t keynum = 0;
 #define PIN 9
@@ -51,10 +52,11 @@ enum
 };
 // HID report descriptor using TinyUSB's template
 uint8_t const desc_hid_report[] =
-    {
-        TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD)),
-        TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(RID_MOUSE)),
-        TUD_HID_REPORT_DESC_CONSUMER(HID_REPORT_ID(RID_CONSUMER_CONTROL))};
+{
+  TUD_HID_REPORT_DESC_KEYBOARD(HID_REPORT_ID(RID_KEYBOARD)),
+  TUD_HID_REPORT_DESC_MOUSE(HID_REPORT_ID(RID_MOUSE)),
+  TUD_HID_REPORT_DESC_CONSUMER(HID_REPORT_ID(RID_CONSUMER_CONTROL))
+};
 // USB HID object
 Adafruit_USBD_HID usb_hid;
 // the setup function runs once when you press reset or power the board
@@ -146,8 +148,9 @@ void loop()
             sw5 = !digitalRead(colPins[0]);
             sw6 = !digitalRead(colPins[1]);
             sw7 = !digitalRead(colPins[2]);
+            sw8 = !digitalRead(colPins[3]);
           }
-          sw_state = ((sw1 << 6) + (sw2 << 5) + (sw3 << 4) + (sw4 << 3) + (sw5 << 2) + (sw6 << 1) + (sw7 << 0));
+          sw_state = ((sw8 << 7) + (sw1 << 6) + (sw2 << 5) + (sw3 << 4) + (sw4 << 3) + (sw5 << 2) + (sw6 << 1) + (sw7 << 0));
           if (currentStates[row][col] == LOW)
           {
             //配列初期化
@@ -156,6 +159,13 @@ void loop()
               keycode[i] = 0;
             }
             keynum = 0;
+            Serial.println(sw_state);
+
+            if (sw_state & 0b10000000)
+            {
+              //ミュート
+              usb_hid.sendReport16(RID_CONSUMER_CONTROL, HID_USAGE_CONSUMER_MUTE);
+            }
             if (sw_state & 0b01000000)
             {
               //Serial.println("sw1");
@@ -174,7 +184,7 @@ void loop()
             {
               //Serial.println("sw3");
               keynum = 2;
-              usb_hid.sendReport16(RID_CONSUMER_CONTROL, HID_USAGE_CONSUMER_MUTE);
+            
               normal_led(BRIGHTNESS);
             }
             if (sw_state & 0b00001000)
@@ -209,6 +219,7 @@ void loop()
               keycode[1] = HID_KEY_F;
               normal_led(BRIGHTNESS);
             }
+
             Serial.println(" Push");
             Serial.println(sw_state, BIN);
             for (int i = 0; i < 7; i++)

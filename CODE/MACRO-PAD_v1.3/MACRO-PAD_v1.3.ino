@@ -36,27 +36,26 @@ uint8_t keynum = 0;
 #define NUMPIXELS 7
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
-#if defined ARDUINO_SAMD_CIRCUITPLAYGROUND_EXPRESS
-bool activeState = true;
-#elif defined ARDUINO_NRF52840_FEATHER
-bool activeState = false;
-#else
-bool activeState = false;
-#endif
-// Report ID
-
-// HID report descriptor using TinyUSB's template
 uint8_t const desc_hid_report[] =
 {
   TUD_HID_REPORT_DESC_GAMEPAD()
 };
 
-Adafruit_USBD_HID usb_hid(desc_hid_report, sizeof(desc_hid_report), HID_ITF_PROTOCOL_NONE, 2, false);
-hid_gamepad_report_t gp;
+// USB HID object
+Adafruit_USBD_HID usb_hid;
+
+hid_gamepad_report_t    gp;     // defined in hid.h from Adafruit_TinyUSB_ArduinoCore
+// For Gamepad Button Bit Mask see  hid_gamepad_button_bm_t  typedef defined in hid.h from Adafruit_TinyUSB_ArduinoCore
+// For Gamepad Hat    Bit Mask see  hid_gamepad_hat_bm_t     typedef defined in hid.h from Adafruit_TinyUSB_ArduinoCore
 
 void setup()
 {
   Serial.begin(115200);
+
+  usb_hid.setPollInterval(2);
+  usb_hid.setReportDescriptor(desc_hid_report, sizeof(desc_hid_report));
+  usb_hid.begin();
+
   for (int i = 0; i < COLS; i++)
   {
     pinMode(colPins[i], INPUT_PULLUP);
@@ -74,8 +73,6 @@ void setup()
     }
     digitalWrite(rowPins[row], HIGH);
   }
-
-  usb_hid.begin();
   // wait until device mounted
   while (!USBDevice.mounted())
     delay(1);
